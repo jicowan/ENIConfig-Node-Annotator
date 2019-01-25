@@ -1,0 +1,67 @@
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+ name: eniconfig
+rules:
+ - apiGroups: [""]
+   resources: ["nodes"]
+   verbs: ["get", "list", "watch", "patch"]
+ - apiGroups: ["crd.k8s.amazonaws.com"]
+   resources: ["eniconfigs"]
+   verbs: ["list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+ name: eniconfig
+subjects:
+  - kind: ServiceAccount
+    name: eniconfig
+    namespace: default
+roleRef:
+ kind: ClusterRole
+ name: eniconfig
+ apiGroup: rbac.authorization.k8s.io
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+ name: eniconfig
+ namespace: default
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: eniconfig
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: eniconfig
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        iam.amazonaws.com/role: arn:aws:iam::820537372947:role/eniconfig-role
+      labels:
+        run: eniconfig
+    spec:
+      serviceAccountName: eniconfig
+      containers:
+      - image: 820537372947.dkr.ecr.us-west-2.amazonaws.com/eniconfigmapper:v.1
+        env:
+          - name: AWS_REGION
+            value: us-west-2
+        imagePullPolicy: Always
+        name: eniconfig
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
