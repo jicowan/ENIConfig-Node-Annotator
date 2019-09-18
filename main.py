@@ -9,7 +9,7 @@ def get_token(cluster_name):
     args = ("/usr/local/bin/aws-iam-authenticator", "token", "-i", cluster_name, "--token-only")
     popen = subprocess.Popen(args, stdout=subprocess.PIPE)
     popen.wait()
-    return popen.stdout.read().rstrip()
+    return popen.stdout.read().rstrip().decode('UTF8')
 
 def get_subnet_az(subnet_id):
     ec2 = boto3.resource('ec2', region_name=os.getenv('AWS_REGION'))
@@ -45,12 +45,13 @@ def find_eniconfig(instance_az):
 #configuration = client.Configuration()
 #configuration.host = 'https://9685B319BF77EF70E801FEB00983EF41.yl4.us-west-2.eks.amazonaws.com'
 #configuration.debug = False
-#configuration.api_key['authorization']= "Bearer " + api_token
+#configuration.api_key = {"authorization": "Bearer " + api_token}
 #configuration.assert_hostname = True
 #configuration.verify_ssl = False
 #client.Configuration.set_default(configuration)
 
 config.load_incluster_config()
+
 v1 = client.CoreV1Api()
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
 
